@@ -3,7 +3,6 @@
 #sqlite3 wrapper
 #made by Aspire
 
-from contextlib import contextmanager
 import sqlite3
 
 class DataBase: #{
@@ -12,6 +11,12 @@ class DataBase: #{
         self.open = False
         self.connect()
     #}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.closeWithoutCommitting()
 
     def __str__(self): #{
         return "Database[{0}.db, {1}]".format(self.name, "open" if self.open else "closed")
@@ -31,13 +36,6 @@ class DataBase: #{
         except sqlite3.Error as error:
             print("Error opening database with name %s" % dbName)
             print(error)
-    #}
-
-    @contextmanager
-    def openDB(dbName="data"): #{
-        db = DataBase(dbName)
-        yield db
-        db.closeWithoutCommitting()
     #}
 
     def commit(self): #{
