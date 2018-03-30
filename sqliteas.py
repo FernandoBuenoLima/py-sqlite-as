@@ -1,9 +1,16 @@
+#sqliteas.py
+#
+#sqlite3 wrapper
+#made by Aspire
+
 from contextlib import contextmanager
 import sqlite3
 
 class DataBase: #{
     def __init__(self, name="data"): #{
         self.name = name
+        self.open = False
+        self.connect()
     #}
 
     def __str__(self): #{
@@ -14,7 +21,7 @@ class DataBase: #{
         return str(self)
     #}
 
-    def open(self): #{
+    def connect(self): #{
         if self.open:
             return
         try:
@@ -24,6 +31,13 @@ class DataBase: #{
         except sqlite3.Error as error:
             print("Error opening database with name %s" % dbName)
             print(error)
+    #}
+
+    @contextmanager
+    def openDB(dbName="data"): #{
+        db = DataBase(dbName)
+        yield db
+        db.closeWithoutCommitting()
     #}
 
     def commit(self): #{
@@ -48,7 +62,7 @@ class DataBase: #{
     def close(self): #{
         if not self.open:
             return
-            
+
         try:
             self.commit()
             self.cursor.close()
@@ -56,13 +70,6 @@ class DataBase: #{
             self.open = False
         except sqlite3.Error as error:
             print(error)
-    #}
-
-    @contextmanager
-    def openDB(dbName="data"): #{
-        db = DataBase(dbName)
-        yield db
-        db.closeWithoutCommitting()
     #}
 
     def execute(self, query): #{
@@ -88,7 +95,6 @@ class DataBase: #{
 
     def createTable(self, name, columns): #{
         query = "CREATE TABLE IF NOT EXISTS {0}({1});".format(name, columns)
-        print(query)
         self.execute(query)
     #}
 
@@ -97,12 +103,14 @@ class DataBase: #{
         self.execute(query)
     #}
 
-    def select(self, table, columns="*", where="", orderBy=""): #{
+    def select(self, table, columns="*", where="", orderBy="", groupBy=""): #{
         query = "SELECT {0} FROM {1}".format(columns, table)
         if len(where) > 0:
             query += " WHERE " + where
         if len(orderBy) > 0:
             query += " ORDER BY " + orderBy
+        if len(groupBy) > 0:
+            query += " GROUP BY " + groupBy
         query += ";"
         return self.executeQuery(query)
     #}
@@ -125,13 +133,13 @@ class DataBase: #{
         self.execute(query)
     #}
 
-    def delete(self, table, where): #{
+    def delete(self, table, where="1"): #{
         query = "DELETE FROM {0} WHERE ".format(table) + where
         self.execute(query)
     #}
 
     def truncate(self, table): #{
-        self.delete(table, "1")
+        self.delete(table)
     #}
 
     def listTables(self): #{
