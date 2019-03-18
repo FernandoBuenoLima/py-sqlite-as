@@ -5,7 +5,14 @@
 
 import sqlite3
 
-class DataBase: #{
+def prettyPrint(data):
+    for row in data:
+        rowstr = ""
+        for cell in row:
+            rowstr += str(cell) + "\t"
+        print(rowstr)
+
+class ASDataBase: #{
     def __init__(self, name="data"): #{
         self.name = name
         self.open = False
@@ -19,7 +26,7 @@ class DataBase: #{
         self.closeWithoutCommitting()
 
     def __str__(self): #{
-        return "Database[{0}.db, {1}]".format(self.name, "open" if self.open else "closed")
+        return "ASDataBase[{0}.db, {1}]".format(self.name, "open" if self.open else "closed")
     #}
 
     def __repr__(self): #{
@@ -91,9 +98,14 @@ class DataBase: #{
             print("Cant query a closed DB")
     #}
 
+    def getTable(self, name):
+        return ASTable(self, name)
+
     def createTable(self, name, columns): #{
         query = "CREATE TABLE IF NOT EXISTS {0}({1});".format(name, columns)
         self.execute(query)
+
+        return self.getTable(name)
     #}
 
     def dropTable(self, name): #{
@@ -101,7 +113,7 @@ class DataBase: #{
         self.execute(query)
     #}
 
-    def select(self, table, columns="*", where="", orderBy="", groupBy=""): #{
+    def select(self, table, columns="*", where="", orderBy="", groupBy="", limit=-1): #{
         query = "SELECT {0} FROM {1}".format(columns, table)
         if len(where) > 0:
             query += " WHERE " + where
@@ -109,6 +121,8 @@ class DataBase: #{
             query += " ORDER BY " + orderBy
         if len(groupBy) > 0:
             query += " GROUP BY " + groupBy
+        if limit > 0:
+            query += " LIMIT " + str(limit)
         query += ";"
         return self.executeQuery(query)
     #}
@@ -126,8 +140,9 @@ class DataBase: #{
     def update(self, table, set, where=""): #{
         query = "UPDATE {0} SET {1}".format(table, set)
         if len(where) > 0:
-            query += " WHERE " + set
+            query += " WHERE " + where
         query += ";"
+
         self.execute(query)
     #}
 
@@ -149,3 +164,40 @@ class DataBase: #{
         return self.executeQuery(query)
     #}
 #}
+
+class ASTable:
+    def __init__(self, db, name):
+        self.db = db
+        self.name = name
+
+    def drop(self): #{
+        self.db.dropTable(self.name)
+    #}
+
+    def select(self, columns="*", where="", orderBy="", groupBy="", limit=-1): #{
+        return self.db.select(self.name, columns, where, orderBy, groupBy, limit)
+    #}
+
+    def insert(self, data): #{
+        self.db.insert(self.name, data)
+    #}
+
+    def insertIntoColumns(self, columns, data): #{
+        self.db.insertIntoColumns(self.name, columns, data)
+    #}
+
+    def update(self, set, where=""): #{
+        self.db.update(self.name, set, where)
+    #}
+
+    def delete(self, where="1"): #{
+        self.db.delete(self.name, where)
+    #}
+
+    def truncate(self): #{
+        self.db.truncate(self.name)
+    #}
+
+    def listColumns(self): #{
+        return self.db.listColumns(self.name)
+    #}
